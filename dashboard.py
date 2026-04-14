@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 st.set_page_config(
-    page_title="Genisis Investment's Data",
+    page_title="MSH Interactive Dashboard",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -262,6 +262,18 @@ avg_valuation = (
     if "Valuation Num" in filtered_df.columns and len(filtered_df) > 0 else 0
 )
 
+ipr_total = 0
+for col in [
+    "Total No. of IPRs Published",
+    "Total No. of IPRs Granted",
+    "No. of Patents Published",
+    "No. Patents Granted",
+    "No. of Trademarks",
+    "No. of Copyrights"
+]:
+    if col in filtered_df.columns:
+        ipr_total += filtered_df[col].sum(skipna=True)
+
 if page == "Overview":
     k1, k2, k3, k4, k5 = st.columns(5)
 
@@ -287,44 +299,64 @@ if page == "Overview":
 
     with c1:
         st.markdown('<div class="panel-card">', unsafe_allow_html=True)
-        st.markdown('<div class="panel-title">State-wise Startup Distribution</div>', unsafe_allow_html=True)
-        if "State" in filtered_df.columns:
-            state_df = (
-                filtered_df[filtered_df["State"].astype(str).str.strip() != ""]
-                .groupby("State")
-                .size()
-                .reset_index(name="Count")
-                .sort_values("Count", ascending=False)
-                .head(12)
+    st.markdown('<div class="panel-title">State-wise Startup Distribution</div>', unsafe_allow_html=True)
+    if "State" in filtered_df.columns:
+        state_df = (
+            filtered_df[filtered_df["State"].astype(str).str.strip() != ""]
+            .groupby("State")
+            .size()
+            .reset_index(name="Count")
+            .sort_values("Count", ascending=False)
+            .head(12)
+        )
+        if not state_df.empty:
+            state_df = state_df.sort_values("Count", ascending=True)
+
+            fig = px.bar(
+                state_df,
+                x="Count",
+                y="State",
+                orientation="h",
+                text="Count"
             )
-            if not state_df.empty:
-                fig = px.treemap(state_df, path=["State"], values="Count")
-                fig.update_layout(height=320, margin=dict(l=6, r=6, t=6, b=6))
-                st.plotly_chart(fig, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            fig.update_traces(marker_color="#6b39b4", textposition="outside")
+            fig.update_layout(
+                height=320,
+                margin=dict(l=6, r=20, t=6, b=6),
+                xaxis_title="Startup Count",
+                yaxis_title="State",
+                plot_bgcolor="white",
+                paper_bgcolor="white"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     with c2:
         st.markdown('<div class="panel-card">', unsafe_allow_html=True)
-        st.markdown('<div class="panel-title">Sector-wise Startup Count</div>', unsafe_allow_html=True)
-        if "Sector" in filtered_df.columns:
-            sector_df = (
-                filtered_df[filtered_df["Sector"].astype(str).str.strip() != ""]
-                .groupby("Sector")
-                .size()
-                .reset_index(name="Count")
-                .sort_values("Count", ascending=False)
-                .head(10)
+    st.markdown('<div class="panel-title">Funding Raised by Sector</div>', unsafe_allow_html=True)
+    if "Sector" in filtered_df.columns and "Total Funds Raised Num" in filtered_df.columns:
+        fs_df = (
+            filtered_df.groupby("Sector", as_index=False)["Total Funds Raised Num"]
+            .sum()
+            .sort_values("Total Funds Raised Num", ascending=False)
+            .head(10)
+        )
+        if not fs_df.empty:
+            fs_df["Funding Cr"] = fs_df["Total Funds Raised Num"] / 100
+
+            fig = px.treemap(
+                fs_df,
+                path=["Sector"],
+                values="Funding Cr",
+                color="Funding Cr",
+                color_continuous_scale="Purples"
             )
-            if not sector_df.empty:
-                fig = px.bar(sector_df, x="Count", y="Sector", orientation="h", text="Count")
-                fig.update_traces(marker_color="#6b39b4")
-                fig.update_layout(
-                    height=320,
-                    margin=dict(l=6, r=6, t=6, b=6),
-                    yaxis={"categoryorder": "total ascending"}
-                )
-                st.plotly_chart(fig, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            fig.update_layout(
+                height=340,
+                margin=dict(l=6, r=6, t=6, b=6)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "Funding & Revenue":
     k1, k2, k3 = st.columns(3)
@@ -380,12 +412,27 @@ elif page == "Funding & Revenue":
             )
             if not fs_df.empty:
                 fs_df["Funding Cr"] = fs_df["Total Funds Raised Num"] / 100
-                fig = px.line(fs_df, x="Sector", y="Funding Cr", markers=True)
-                fig.update_traces(line_color="#5b2d90", marker_color="#5b2d90", fill="tozeroy")
+                fs_df = fs_df.sort_values("Funding Cr", ascending=True)
+
+                fig = px.bar(
+                    fs_df,
+                    x="Funding Cr",
+                    y="Sector",
+                    orientation="h",
+                    text="Funding Cr"
+                )
+                fig.update_traces(
+                    marker_color="#5b2d90",
+                    texttemplate="%{text:.2f} Cr",
+                    textposition="outside"
+                )
                 fig.update_layout(
                     height=340,
-                    margin=dict(l=6, r=6, t=6, b=6),
-                    plot_bgcolor="#f8f4fc"
+                    margin=dict(l=6, r=25, t=6, b=6),
+                    xaxis_title="Funding Raised (Cr)",
+                    yaxis_title="Sector",
+                    plot_bgcolor="#f8f4fc",
+                    paper_bgcolor="white"
                 )
                 st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -401,10 +448,14 @@ elif page == "Sector Analysis":
             "Revenue AprFeb Num": "sum"
         }).sort_values("Total Funds Raised Num", ascending=False)
 
-        sector_summary["Funding Cr"] = sector_summary["Total Funds Raised Num"] / 100
+        sector_summary["Funding Cr"] = (sector_summary["Total Funds Raised Num"] / 100).round(2)
 
         fig = px.bar(sector_summary.head(10), x="Sector", y="Funding Cr", text="Funding Cr")
-        fig.update_traces(marker_color="#6b39b4")
+        fig.update_traces(
+            marker_color="#6b39b4",
+            texttemplate="%{text:.2f}",
+            textposition="outside"
+        )
         fig.update_layout(height=360, margin=dict(l=6, r=6, t=6, b=6))
         st.plotly_chart(fig, use_container_width=True)
 
