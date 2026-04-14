@@ -291,7 +291,6 @@ if page == "Overview":
             <div class="kpi-card">
                 <div class="kpi-title">{title}</div>
                 <div class="kpi-value">{value}</div>
-                <div class="kpi-sub">{sub}</div>
             </div>
             """, unsafe_allow_html=True)
 
