@@ -148,6 +148,16 @@ def load_data():
     df = pd.read_excel("Investment data.xlsx")
     df.columns = [str(c).strip() for c in df.columns]
 
+    if "State" in df.columns:
+        df["State"] = (
+            df["State"]
+            .astype(str)
+            .str.strip()
+            .str.replace(r"\s+", " ", regex=True)
+            .str.title()
+        )
+        df["State"] = df["State"].replace("Nan", pd.NA)
+
     if "Total Funds Raised" in df.columns:
         df["Total Funds Raised Num"] = pd.to_numeric(df["Total Funds Raised"], errors="coerce")
 
@@ -202,20 +212,11 @@ with st.sidebar:
 
     filtered_df = df.copy()
 
-    @st.cache_data
-def load_data():
-    df = pd.read_excel("Investment data.xlsx")
-    df.columns = [str(c).strip() for c in df.columns]
-
     if "State" in df.columns:
-        df["State"] = (
-            df["State"]
-            .astype(str)
-            .str.strip()
-            .str.replace(r"\s+", " ", regex=True)
-            .str.title()
-        )
-        df["State"] = df["State"].replace("Nan", pd.NA)
+        state_options = sorted([x for x in df["State"].dropna().astype(str).unique() if x.strip() != ""])
+        selected_states = st.multiselect("State", state_options)
+        if selected_states:
+            filtered_df = filtered_df[filtered_df["State"].astype(str).isin(selected_states)]
 
     if "Sector" in df.columns:
         sector_options = sorted([x for x in df["Sector"].dropna().astype(str).unique() if x.strip() != ""])
