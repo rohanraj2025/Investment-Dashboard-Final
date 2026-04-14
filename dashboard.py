@@ -202,11 +202,20 @@ with st.sidebar:
 
     filtered_df = df.copy()
 
+    @st.cache_data
+def load_data():
+    df = pd.read_excel("Investment data.xlsx")
+    df.columns = [str(c).strip() for c in df.columns]
+
     if "State" in df.columns:
-        state_options = sorted([x for x in df["State"].dropna().astype(str).unique() if x.strip() != ""])
-        selected_states = st.multiselect("State", state_options)
-        if selected_states:
-            filtered_df = filtered_df[filtered_df["State"].astype(str).isin(selected_states)]
+        df["State"] = (
+            df["State"]
+            .astype(str)
+            .str.strip()
+            .str.replace(r"\s+", " ", regex=True)
+            .str.title()
+        )
+        df["State"] = df["State"].replace("Nan", pd.NA)
 
     if "Sector" in df.columns:
         sector_options = sorted([x for x in df["Sector"].dropna().astype(str).unique() if x.strip() != ""])
